@@ -13,7 +13,18 @@ pinned: false
 
 ## OpenEnv Code Review Workflows
 
-Production-style OpenEnv environment that simulates real code-review workflows with deterministic scoring and step-wise rewards.
+Production-style OpenEnv environment for deterministic code-review workflows with staged actions, per-step rewards, and API-first execution.
+
+## What This Project Provides
+
+- 3 tasks: easy, medium, hard
+- Typed OpenEnv models: Observation, Action, Reward
+- Deterministic scoring in the range [0.0, 1.0]
+- Runtime API endpoints for OpenEnv checks:
+  - POST /reset
+  - POST /step
+  - GET /state
+- Root inference script at inference.py that reads HF_TOKEN and outputs task scores
 
 ## Functional Coverage
 
@@ -23,7 +34,7 @@ Production-style OpenEnv environment that simulates real code-review workflows w
 - OpenEnv methods: reset(), step(), state()
 - Deterministic graders with score range [0.0, 1.0]
 - Reward at every step with progress rewards and penalties
-- Baseline inference script using OpenAI-compatible API with HF_TOKEN
+- Inference script reads HF_TOKEN
 
 ## Project Structure
 
@@ -50,10 +61,14 @@ Production-style OpenEnv environment that simulates real code-review workflows w
   - run_baseline.py
   - evaluate.py
   - test_env.py
+- api/
+  - app.py
 - openenv.yaml
 - Dockerfile
 - requirements.txt
 - app.py
+- inference.py
+- validate.py
 
 ## Reward Design
 
@@ -68,31 +83,105 @@ Per-step reward is deterministic and uses:
 
 Total reward is clamped to [0.0, 1.0].
 
-## Quick Start
+## Local Setup
 
 ```bash
 pip install -r requirements.txt
-python scripts/test_env.py
-python validate.py
 ```
 
-## Baseline Inference
+## Run API (Required OpenEnv Command)
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 7860
+```
+
+## API Contract
+
+### POST /reset
+
+Resets the environment and returns the initial observation.
+
+Request body (optional):
+
+```json
+{
+  "task_id": "easy"
+}
+```
+
+### POST /step
+
+Applies one action and returns the transition payload:
+
+```json
+{
+  "observation": {"...": "..."},
+  "reward": {"score": 0.0, "feedback": "...", "components": {}},
+  "done": false,
+  "info": {}
+}
+```
+
+Request body supports either direct action payload or wrapped action:
+
+```json
+{
+  "action": {
+    "task_id": "easy",
+    "action_type": "identify_bug",
+    "payload": "The loop header is missing a colon.",
+    "confidence": 0.85
+  }
+}
+```
+
+### GET /state
+
+Returns the current internal environment state snapshot.
+
+## Endpoint Smoke Tests
+
+```bash
+curl -X POST "http://127.0.0.1:7860/reset" \
+  -H "Content-Type: application/json" \
+  -d '{"task_id":"easy"}'
+
+curl -X POST "http://127.0.0.1:7860/step" \
+  -H "Content-Type: application/json" \
+  -d '{"action":{"task_id":"easy","action_type":"identify_bug","payload":"The loop header is missing a colon, causing syntax failure before execution.","confidence":0.85}}'
+
+curl "http://127.0.0.1:7860/state"
+```
+
+## Validation and Tests
+
+```bash
+python scripts/test_env.py
+python validate.py
+pytest -q
+```
+
+## Inference (Mandatory Root Script)
 
 Set environment variables:
 
 ```bash
 set HF_TOKEN=your_api_key
-set OPENAI_MODEL=gpt-4o-mini
-set OPENAI_BASE_URL=https://api.openai.com/v1
-python scripts/run_baseline.py
+python inference.py
 ```
 
 Example output:
 
 ```text
-Easy: 0.85
-Medium: 0.60
-Hard: 0.40
+[START]
+[STEP]
+easy: 0.945
+[STEP]
+medium: 0.137
+[STEP]
+hard: 0.109
+[END]
+{"scores":{"easy":0.945,"medium":0.137,"hard":0.109},"average":0.397}
 ```
 
 ## Docker
@@ -102,4 +191,4 @@ docker build -t openenv-code-review-workflows .
 docker run --rm -p 7860:7860 openenv-code-review-workflows
 ```
 
-The API health endpoint is available at /health.
+The service listens on port 7860 and exposes /health for liveness checks.

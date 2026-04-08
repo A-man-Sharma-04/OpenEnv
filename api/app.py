@@ -5,9 +5,10 @@ import os
 import sys
 import uuid
 from datetime import datetime
+from threading import Lock
 from typing import Any, Dict, List, Optional
 
-from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, Body, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -27,6 +28,7 @@ from evaluation.runner import EvaluationRunner, Leaderboard
 from llm.provider import GroqProvider, LLMManager, MockProvider
 from rewards.engine import RewardEngine
 from utils.logging_config import get_logger
+from code_review_env import CodeReviewEnv
 
 
 app = FastAPI(
@@ -71,6 +73,8 @@ def build_llm_manager() -> LLMManager:
 
 llm_manager = build_llm_manager()
 reward_engine = RewardEngine(llm_manager)
+openenv_env = CodeReviewEnv(default_task_id="easy")
+openenv_lock = Lock()
 
 
 # Pydantic models for API
@@ -99,6 +103,10 @@ class EvaluationStatus(BaseModel):
 class LeaderboardResponse(BaseModel):
     rankings: List[Dict[str, Any]]
     last_updated: datetime
+
+
+class ResetRequest(BaseModel):
+    task_id: Optional[str] = None
 
 
 # Environment factory
@@ -149,6 +157,42 @@ async def create_task(task: TaskConfig):
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/reset", response_model=Dict[str, Any])
+async def reset_openenv(payload: Optional[ResetRequest] = None):
+    """Reset OpenEnv episode and return initial observation."""
+    task_id = payload.task_id if payload else None
+    try:
+        with openenv_lock:
+            observation = openenv_env.reset(task_id)
+        return observation.model_dump()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/step", response_model=Dict[str, Any])
+async def step_openenv(payload: Dict[str, Any] = Body(...)):
+    """Apply one action and return observation, reward, done, and info."""
+    action_payload = payload.get("action", payload)
+    try:
+        with openenv_lock:
+            observation, reward, done, info = openenv_env.step(action_payload)
+        return {
+            "observation": observation.model_dump(),
+            "reward": reward.model_dump(),
+            "done": done,
+            "info": info,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/state", response_model=Dict[str, Any])
+async def state_openenv():
+    """Return current OpenEnv internal state."""
+    with openenv_lock:
+        return openenv_env.state()
 
 
 @app.post("/evaluate", response_model=Dict[str, str])
