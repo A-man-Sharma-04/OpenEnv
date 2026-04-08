@@ -1,0 +1,11 @@
+[
+  {
+    "case_id": "medium-001",
+    "domain": "code_review",
+    "repo": "customer-analytics",
+    "ticket": "Review flagged unreadable ETL transformation and line length violations.",
+    "code_snippet": "def build_report(records): return [ transform(r) for r in records if r.active and r.region == 'NA' and r.plan in ['basic','pro'] ]",
+    "identify_terms": ["line length", "whitespace", "readability", "pep8"],
+    "refactor_terms": ["extract", "helper", "format", "list comprehension", "docstring"]
+  }
+]

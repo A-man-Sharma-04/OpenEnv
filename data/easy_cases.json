@@ -1,0 +1,10 @@
+[
+  {
+    "case_id": "easy-001",
+    "domain": "code_review",
+    "repo": "billing-service",
+    "ticket": "Checkout API fails with a syntax error after a hotfix.",
+    "code_snippet": "def total_cost(items):\n    total = 0\n    for item in items\n        total += item.price\n    return total",
+    "required_terms": ["for", "colon", "syntax", "loop"]
+  }
+]

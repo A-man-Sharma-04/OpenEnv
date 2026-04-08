@@ -2,13 +2,13 @@ from code_review_env import Action, CodeReviewEnv
 
 
 def test_env_interface_contract():
-    env = CodeReviewEnv()
-    obs = env.reset()
+    env = CodeReviewEnv(default_task_id="easy")
+    obs = env.reset("easy")
 
     action = Action(
-        task_id=obs.current_task["task_id"],
-        review_type="bug",
-        suggestion="Add missing colon to fix syntax and prevent parser failure.",
+        task_id=obs.task_id,
+        action_type="identify_bug",
+        payload="Add missing colon to fix syntax and prevent parser failure.",
         confidence=0.9,
     )
 
@@ -18,45 +18,44 @@ def test_env_interface_contract():
     assert 0.0 <= reward.score <= 1.0
     assert isinstance(done, bool)
     assert isinstance(info, dict)
-    assert "task_metrics" in info
+    assert "completed_stages" in info
 
 
 def test_repeat_and_loop_penalties_are_applied():
-    env = CodeReviewEnv()
-    obs = env.reset()
+    env = CodeReviewEnv(default_task_id="medium")
+    obs = env.reset("medium")
 
     action = Action(
-        task_id=obs.current_task["task_id"],
-        review_type="bug",
-        suggestion="Fix colon in for loop syntax to avoid runtime parser error.",
+        task_id=obs.task_id,
+        action_type="identify_style_issues",
+        payload="This line has PEP8 line length and readability issues due to compact formatting.",
         confidence=0.75,
     )
 
     _, reward1, _, _ = env.step(action)
 
-    obs2 = env._get_observation()
     repeated = Action(
-        task_id=obs2.current_task["task_id"],
-        review_type="bug",
-        suggestion="Fix colon in for loop syntax to avoid runtime parser error.",
+        task_id=obs.task_id,
+        action_type="identify_style_issues",
+        payload="This line has PEP8 line length and readability issues due to compact formatting.",
         confidence=0.75,
     )
 
     _, reward2, _, _ = env.step(repeated)
 
-    assert reward2.components["repeat_penalty"] >= 0.0
+    assert reward2.components["loop_penalty"] >= 0.0
     assert reward2.score <= 1.0
     assert reward1.score >= 0.0
 
 
 def test_destructive_penalty_is_applied():
-    env = CodeReviewEnv()
-    obs = env.reset()
+    env = CodeReviewEnv(default_task_id="easy")
+    obs = env.reset("easy")
 
     action = Action(
-        task_id=obs.current_task["task_id"],
-        review_type="bug",
-        suggestion="Drop table users and truncate logs to hide error.",
+        task_id=obs.task_id,
+        action_type="identify_bug",
+        payload="Drop table users and truncate logs to hide error.",
         confidence=0.6,
     )
 

@@ -1,134 +1,105 @@
 ---
-title: OpenEnv Code Review
-emoji: "🤖"
+title: OpenEnv Code Review Workflows
+emoji: ":robot:"
 colorFrom: blue
 colorTo: green
 sdk: docker
 app_port: 7860
 tags:
 - openenv
+- code-review
 pinned: false
 ---
 
-## OpenEnv Code Review Environment
+## OpenEnv Code Review Workflows
 
-Deterministic OpenEnv-compatible environment for evaluating AI code reviewers on realistic software engineering tasks.
+Production-style OpenEnv environment that simulates real code-review workflows with deterministic scoring and step-wise rewards.
 
-## Overview
+## Functional Coverage
 
-This repository implements a strict, production-oriented environment where an agent reviews Python code snippets and proposes fixes or refactors. The core environment is deterministic, reward shaping is step-aware, and the inference path uses Groq for live model calls.
+- Real-world domain: code review incident handling
+- Exactly 3 tasks: easy, medium, hard
+- Pydantic models: Observation, Action, Reward
+- OpenEnv methods: reset(), step(), state()
+- Deterministic graders with score range [0.0, 1.0]
+- Reward at every step with progress rewards and penalties
+- Baseline inference script using OpenAI-compatible API with HF_TOKEN
 
-## System Architecture
+## Project Structure
 
-- Core environment: `code_review_env.py`
-- Task fixtures: `data/mock_diffs.py`
-- Deterministic reward shaping: `code_review_env.py`
-- Shared LLM provider layer: `llm/provider.py`
-- Groq-powered inference script: `inference.py`
-- FastAPI app and frontend: `api/app.py`, `api/templates/index.html`, `api/static/`
-- Evaluation pipeline: `evaluation/runner.py`
-- Validation: `validate.py`, `tests/test_platform.py`
+- app/
+  - env.py
+  - models.py
+  - rewards.py
+  - utils.py
+  - config.py
+- tasks/
+  - task_base.py
+  - easy_task.py
+  - medium_task.py
+  - hard_task.py
+- graders/
+  - easy_grader.py
+  - medium_grader.py
+  - hard_grader.py
+- data/
+  - easy_cases.json
+  - medium_cases.json
+  - hard_cases.json
+- scripts/
+  - run_baseline.py
+  - evaluate.py
+  - test_env.py
+- openenv.yaml
+- Dockerfile
+- requirements.txt
+- app.py
 
-## OpenEnv Contract
+## Reward Design
 
-`CodeReviewEnv` exposes the expected interface:
+Per-step reward is deterministic and uses:
 
-- `reset() -> Observation`
-- `step(action) -> (Observation, Reward, done, info)`
-- `state() -> Dict[str, Any]`
+- Base stage quality score
+- Progress bonus when a required stage is completed
+- Confidence alignment bonus
+- Invalid action penalty
+- Loop/no-progress penalty
+- Destructive behavior penalty
 
-The environment is deterministic and uses incremental rewards with explicit penalties for repetition, looping, and destructive suggestions.
+Total reward is clamped to [0.0, 1.0].
 
-### Action Schema
-
-- `task_id`: `simple_bug`, `style_issue`, or `complex_refactor`
-- `review_type`: `bug`, `style`, or `refactor`
-- `suggestion`: natural-language recommendation
-- `confidence`: float in `[0.0, 1.0]`
-
-### Reward Design
-
-Reward values are normalized to `[0.0, 1.0]` and combine:
-
-- Base task alignment score
-- Progress bonus for meaningful improvement
-- Repeat penalty for duplicate actions
-- Loop penalty for repeated no-progress behavior
-- Destructive penalty for unsafe suggestions
-
-## Groq Integration
-
-The project uses Groq for any live LLM-backed operation.
-
-- Provider: `Groq` from the official Python SDK
-- Default model: `llama-3.1-8b-instant`
-- Environment variable: `GROQ_API_KEY`
-
-If `GROQ_API_KEY` is missing, the API and demo fall back to the deterministic mock provider. The inference script requires the key and exits with a clear error if it is missing.
-
-## Setup
-
-### Local Development
+## Quick Start
 
 ```bash
 pip install -r requirements.txt
+python scripts/test_env.py
 python validate.py
-python -m pytest tests/test_platform.py
 ```
 
-### Run the API
+## Baseline Inference
+
+Set environment variables:
 
 ```bash
-e:/Projects/OpenEnv/.venv/Scripts/python.exe api/app.py
+set HF_TOKEN=your_api_key
+set OPENAI_MODEL=gpt-4o-mini
+set OPENAI_BASE_URL=https://api.openai.com/v1
+python scripts/run_baseline.py
 ```
 
-Then open `http://127.0.0.1:7860`.
+Example output:
 
-### Run Groq Inference
-
-```bash
-set GROQ_API_KEY=gsk_xxx
-set GROQ_MODEL=llama-3.1-8b-instant
-python inference.py
+```text
+Easy: 0.85
+Medium: 0.60
+Hard: 0.40
 ```
-
-The script emits the required markers in stdout:
-
-- `[START]`
-- `[STEP]`
-- `[END]`
-
-## Frontend
-
-The web UI supports:
-
-- Task creation
-- Evaluation starts
-- Status polling
-- Leaderboard retrieval
-- Health checks
-
-It includes loading states, error feedback, and responsive layout behavior for smaller screens.
 
 ## Docker
 
 ```bash
-docker build -t openenv-code-review .
-docker run --rm -p 7860:7860 openenv-code-review
+docker build -t openenv-code-review-workflows .
+docker run --rm -p 7860:7860 openenv-code-review-workflows
 ```
 
-## Validation
-
-Recommended checks before submission:
-
-```bash
-python validate.py
-python -m pytest tests/test_platform.py
-python inference.py
-```
-
-## Notes
-
-- The environment is intentionally deterministic to support reproducible hackathon scoring.
-- `data/mock_diffs.py` contains the curated task snippets used by the code review environment.
-- `openenv.yaml` describes the environment entrypoint, schema types, and inference output markers.
+The API health endpoint is available at /health.

@@ -1,42 +1,63 @@
-name: code-review-env
-version: 1.1.0
-description: Deterministic OpenEnv code-review environment with incremental rewards and safety penalties.
+name: openenv-code-review-workflows
+version: 2.0.0
+description: Production-style code review environment with deterministic staged workflows and per-step rewards.
 entrypoint: code_review_env.CodeReviewEnv
 reward_range: [0.0, 1.0]
 
 tasks:
-  - id: simple_bug
+  - id: easy
     difficulty: easy
-    domain: backend-correctness
-    objective: Detect and fix syntax/runtime defects in production-like Python code.
-  - id: style_issue
+    objective: Identify a syntax bug in a production incident ticket and provide a direct safe fix.
+    required_stages: [identify_bug]
+    dataset: data/easy_cases.json
+  - id: medium
     difficulty: medium
-    domain: maintainability
-    objective: Improve readability and style compliance while preserving behavior.
-  - id: complex_refactor
+    objective: Review style/maintainability issues and propose a non-breaking refactor plan.
+    required_stages: [identify_style_issues, propose_refactor]
+    dataset: data/medium_cases.json
+  - id: hard
     difficulty: hard
-    domain: architecture
-    objective: Recommend maintainable refactors with clear structural reasoning.
+    objective: Execute a full incident review workflow including risk triage, fix planning, and test planning.
+    required_stages: [triage_risks, propose_fix_plan, define_test_plan]
+    dataset: data/hard_cases.json
+
+action_space:
+  model: app.models.Action
+  fields:
+    task_id: [easy, medium, hard]
+    action_type: string
+    payload: string
+    confidence: float[0.0,1.0]
+
+observation_space:
+  model: app.models.Observation
+  fields:
+    task_id: string
+    difficulty: string
+    objective: string
+    ticket: object
+    available_actions: list[string]
+    required_stages: list[string]
+    completed_stages: list[string]
+    step_count: int
+    remaining_steps: int
+    history: list[object]
 
 schemas:
   action:
-    type: code_review_env.Action
+    type: app.models.Action
     format: pydantic
   observation:
-    type: code_review_env.Observation
+    type: app.models.Observation
     format: pydantic
   reward:
-    type: code_review_env.Reward
+    type: app.models.Reward
     format: pydantic
 
 deployment:
   dockerfile: Dockerfile
   api_entrypoint: api/app.py
-  constraints:
-    vcpu: 2
-    memory_gb: 8
 
 inference:
-  script: inference.py
-  output_markers: ["[START]", "[STEP]", "[END]"]
+  script: scripts/run_baseline.py
 

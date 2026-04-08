@@ -5,25 +5,26 @@ from typing import Any, Dict, Optional
 
 import json
 
-from groq import Groq
+from openai import OpenAI
 
 from code_review_env import Action, CodeReviewEnv
 from utils.logging_config import get_logger
 
 
-MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+HF_TOKEN = os.getenv("HF_TOKEN")
+BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
 
-if not GROQ_API_KEY:
-    print("GROQ_API_KEY is required", file=sys.stderr)
+if not HF_TOKEN:
+    print("HF_TOKEN is required", file=sys.stderr)
     sys.exit(1)
 
 
 logger = get_logger("openenv.inference")
 
 
-def _build_client() -> Groq:
-    return Groq(api_key=GROQ_API_KEY)
+def _build_client() -> OpenAI:
+    return OpenAI(api_key=HF_TOKEN, base_url=BASE_URL)
 
 
 def _extract_json_object(text: str) -> Optional[str]:
@@ -43,14 +44,14 @@ def _extract_json_object(text: str) -> Optional[str]:
 
 
 class InferenceRunner:
-    def __init__(self, client: Groq, model_name: str):
+    def __init__(self, client: OpenAI, model_name: str):
         self.client = client
         self.model_name = model_name
-        self.env = CodeReviewEnv()
+        self.env = CodeReviewEnv(default_task_id="easy")
 
     def _call_model(self, observation: Dict[str, Any]) -> Action:
         prompt = (
-            "You are solving OpenEnv code review tasks. "
+            "You are solving OpenEnv code review tasks with strict staged workflow order. "
             "Return only one JSON object valid for this schema."
             f"\nAction schema:\n{json.dumps(Action.model_json_schema(), indent=2)}"
             f"\nCurrent observation:\n{json.dumps(observation, indent=2)}"
@@ -74,13 +75,16 @@ class InferenceRunner:
         return Action.model_validate_json(payload)
 
     @staticmethod
-    def _fallback_review_type(task_id: str) -> str:
-        mapping = {
-            "simple_bug": "bug",
-            "style_issue": "style",
-            "complex_refactor": "refactor",
-        }
-        return mapping.get(task_id, "bug")
+    def _fallback_action(task_id: str, observation: Dict[str, Any]) -> Action:
+        stages = observation.get("required_stages", [])
+        completed = observation.get("completed_stages", [])
+        next_stage = stages[len(completed)] if len(completed) < len(stages) else stages[-1]
+        return Action(
+            task_id=task_id,
+            action_type=next_stage,
+            payload=f"Fallback action for stage {next_stage}",
+            confidence=0.0,
+        )
 
     def run(self, max_steps: int = 12) -> Dict[str, Any]:
         observation = self.env.reset()
@@ -102,13 +106,8 @@ class InferenceRunner:
                 next_observation, reward, done, info = self.env.step(action)
             except Exception as exc:
                 logger.debug("Model action failed; applying deterministic fallback", exc_info=exc)
-                fallback_task_id = obs_dict["current_task"].get("task_id", "simple_bug")
-                fallback = Action(
-                    task_id=fallback_task_id,
-                    review_type=self._fallback_review_type(fallback_task_id),
-                    suggestion=f"Parsing failure fallback: {type(exc).__name__}",
-                    confidence=0.0,
-                )
+                fallback_task_id = obs_dict.get("task_id", "easy")
+                fallback = self._fallback_action(fallback_task_id, obs_dict)
                 next_observation, reward, done, info = self.env.step(fallback)
 
             final_score = reward.score

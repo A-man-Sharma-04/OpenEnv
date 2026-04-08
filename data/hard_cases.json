@@ -1,0 +1,12 @@
+[
+  {
+    "case_id": "hard-001",
+    "domain": "code_review",
+    "repo": "payments-ledger",
+    "ticket": "Production incident: duplicate charges under retry storms. Need complete review workflow.",
+    "code_snippet": "def charge_user(gateway, user_id, amount):\n    tx = gateway.charge(user_id, amount)\n    save_transaction(tx.id, user_id, amount)\n    return tx.id",
+    "risk_terms": ["idempotency", "duplicate", "race", "retry", "atomic"],
+    "fix_terms": ["idempotency key", "transaction", "lock", "rollback", "retry policy"],
+    "test_terms": ["unit", "integration", "load", "regression", "monitor"]
+  }
+]
