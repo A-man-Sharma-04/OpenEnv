@@ -4,7 +4,9 @@ emoji: "🤖"
 colorFrom: blue
 colorTo: green
 sdk: docker
-app_port: 8000
+app_port: 7860
+tags:
+- openenv
 pinned: false
 ---
 
@@ -80,7 +82,7 @@ python -m pytest tests/test_platform.py
 e:/Projects/OpenEnv/.venv/Scripts/python.exe api/app.py
 ```
 
-Then open `http://127.0.0.1:8000`.
+Then open `http://127.0.0.1:7860`.
 
 ### Run Groq Inference
 
@@ -112,7 +114,7 @@ It includes loading states, error feedback, and responsive layout behavior for s
 
 ```bash
 docker build -t openenv-code-review .
-docker run --rm -p 8000:8000 openenv-code-review
+docker run --rm -p 7860:7860 openenv-code-review
 ```
 
 ## Validation

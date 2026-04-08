@@ -1,0 +1,22 @@
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# VCS and editor files
+.git/
+.gitignore
+.vscode/
+
+# Test and local artifacts not needed at runtime
+tests/
+.pytest_cache/
+*.log
+tmp_*.py
+
+# OS junk
+.DS_Store
+Thumbs.db
