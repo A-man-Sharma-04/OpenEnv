@@ -1,0 +1,42 @@
+name: code-review-env
+version: 1.1.0
+description: Deterministic OpenEnv code-review environment with incremental rewards and safety penalties.
+entrypoint: code_review_env.CodeReviewEnv
+reward_range: [0.0, 1.0]
+
+tasks:
+  - id: simple_bug
+    difficulty: easy
+    domain: backend-correctness
+    objective: Detect and fix syntax/runtime defects in production-like Python code.
+  - id: style_issue
+    difficulty: medium
+    domain: maintainability
+    objective: Improve readability and style compliance while preserving behavior.
+  - id: complex_refactor
+    difficulty: hard
+    domain: architecture
+    objective: Recommend maintainable refactors with clear structural reasoning.
+
+schemas:
+  action:
+    type: code_review_env.Action
+    format: pydantic
+  observation:
+    type: code_review_env.Observation
+    format: pydantic
+  reward:
+    type: code_review_env.Reward
+    format: pydantic
+
+deployment:
+  dockerfile: Dockerfile
+  api_entrypoint: api/app.py
+  constraints:
+    vcpu: 2
+    memory_gb: 8
+
+inference:
+  script: inference.py
+  output_markers: ["[START]", "[STEP]", "[END]"]
+
