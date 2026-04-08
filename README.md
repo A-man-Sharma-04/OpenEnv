@@ -1,6 +1,6 @@
 ---
 title: OpenEnv Code Review Workflows
-emoji: ":robot:"
+emoji: "🤖"
 colorFrom: blue
 colorTo: green
 sdk: docker
