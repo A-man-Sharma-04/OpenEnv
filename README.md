@@ -1,3 +1,13 @@
+---
+title: OpenEnv Code Review
+emoji: robot
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # OpenEnv Code Review Environment
 
 Deterministic OpenEnv-compatible environment for evaluating AI code reviewers on realistic software engineering tasks.
