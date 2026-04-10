@@ -94,6 +94,9 @@ venv.bak/
 # Project source package named "env" must be committed.
 !env/
 !env/**
+# But ignore Python cache/artifacts inside env.
+env/__pycache__/
+env/**/*.py[cod]
 
 # Spyder project settings
 .spyderproject

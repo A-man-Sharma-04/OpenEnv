@@ -10,66 +10,83 @@ pinned: false
 
 # OpenEnv Code Review Environment
 
-Minimal, production-ready OpenEnv project for real-world code review workflows.
+Production-style OpenEnv benchmark for deterministic code review workflows.
 
-## Hugging Face Space Metadata
+## At a Glance
 
-This repository uses static YAML frontmatter for Hugging Face Spaces at the top of this file.
-Use concrete values only. Do not use template placeholders like `{{title}}` or conditional blocks.
+| Area | Details |
+|---|---|
+| Focus | Code review and incident triage simulation |
+| Difficulties | `easy`, `medium`, `hard` |
+| API Port | `7860` |
+| Primary API | FastAPI (`api/app.py`) |
+| Frontend | Static dashboard (`index.html`, `style.css`, `script.js`) |
 
-Current Space config:
+## Why This Project
 
-```yaml
-title: OpenEnv Code Review
-emoji: "\U0001F9EA"
-colorFrom: blue
-colorTo: indigo
-sdk: docker
-app_port: 7860
-pinned: false
-```
+This environment models realistic review tasks in three stages:
 
-If you switch to a Gradio Space, update the metadata to:
+- `easy`: find a syntax bug and apply a safe direct fix
+- `medium`: identify maintainability risks and propose a non-breaking refactor
+- `hard`: triage production risks, define a fix plan, and define a test plan
 
-- `sdk: gradio`
-- `app_file: app.py`
-- optional `python_version: "3.10"` (or your target runtime)
-
-## Description
-
-This environment simulates production incident code review work in three deterministic stages:
-
-- easy: identify a syntax bug and provide a safe direct fix
-- medium: identify style and maintainability risks, then propose a non-breaking refactor
-- hard: triage production risks, define a fix plan, and define a test plan
-
-The environment exposes required OpenEnv methods:
+Core OpenEnv methods:
 
 - `reset(task_id)`
 - `step(action)`
 - `state()`
 
-## Project Structure
+## Quick Start
 
-```text
-OpenEnv/
-	env/
-	tasks/
-		graders/
-	data/
-	api/
-	index.html
-	style.css
-	script.js
-	run_all.bat
-	inference.py
-	openenv.yaml
-	Dockerfile
-	requirements.txt
-	README.md
+### 1) Install dependencies
+
+```bash
+pip install -r requirements.txt
 ```
 
-## Action Space
+### 2) Start the API
+
+```bash
+uvicorn api.app:app --host 127.0.0.1 --port 7860
+```
+
+Open: `http://127.0.0.1:7860` (or `http://localhost:7860`)
+
+Note: do not use `http://0.0.0.0:7860` in a browser.
+
+### 3) Run validation and tests
+
+```bash
+python validate.py
+pytest -q tests
+```
+
+### 4) (Optional) Open frontend dashboard
+
+```bash
+start index.html
+```
+
+Default API base URL in the dashboard is `http://localhost:7860`.
+
+## API Overview
+
+### Endpoints
+
+- `POST /reset`
+- `POST /step`
+- `GET /state`
+- `GET /health`
+
+### Example request
+
+```bash
+curl -X POST http://127.0.0.1:7860/reset -H "Content-Type: application/json" -d '{"task_id":"easy"}'
+```
+
+## Environment Models
+
+### Action Space
 
 Pydantic model: `env.models.Action`
 
@@ -78,7 +95,7 @@ Pydantic model: `env.models.Action`
 - `payload: str` (analysis/fix text)
 - `confidence: float` (`0.0..1.0`)
 
-## Observation Space
+### Observation Space
 
 Pydantic model: `env.models.Observation`
 
@@ -93,7 +110,7 @@ Pydantic model: `env.models.Observation`
 - `remaining_steps`
 - `history`
 
-## Reward Model
+### Reward Model
 
 Pydantic model: `env.models.Reward`
 
@@ -106,9 +123,9 @@ Includes:
 - penalties for redundant/invalid actions
 - penalties for destructive behavior signals
 
-## Tasks
+## Tasks and Graders
 
-Datasets and deterministic graders:
+Deterministic datasets + graders:
 
 - `data/easy_cases.json` + `tasks/graders/easy_grader.py`
 - `data/medium_cases.json` + `tasks/graders/medium_grader.py`
@@ -116,61 +133,17 @@ Datasets and deterministic graders:
 
 All graders return scores in `0.0..1.0`.
 
-## Setup
+## Inference
 
-```bash
-pip install -r requirements.txt
-```
+Entrypoint: `inference.py`
 
-## Frontend Dashboard
-
-Minimal static frontend files:
-
-- `index.html`
-- `style.css`
-- `script.js`
-
-Open directly in a browser:
-
-```bash
-start index.html
-```
-
-Default API base URL in the UI is `http://localhost:7860` and can be changed from the dashboard.
-
-## Run API
-
-```bash
-uvicorn api.app:app --host 127.0.0.1 --port 7860
-```
-
-Open the API in your browser at `http://127.0.0.1:7860` (or `http://localhost:7860`).
-Do not use `http://0.0.0.0:7860` in a browser.
-
-Endpoints:
-
-- `POST /reset`
-- `POST /step`
-- `GET /state`
-- `GET /health`
-
-Example:
-
-```bash
-curl -X POST http://127.0.0.1:7860/reset -H "Content-Type: application/json" -d '{"task_id":"easy"}'
-```
-
-## Inference Script
-
-Root inference entrypoint: `inference.py`
-
-Reads required environment variables:
+Required environment variables:
 
 - `API_BASE_URL`
 - `MODEL_NAME`
 - `HF_TOKEN`
 
-Emits strict logs using only:
+Strict log format:
 
 - `[START]`
 - `task: <task_name>`
@@ -184,24 +157,15 @@ Emits strict logs using only:
 python inference.py
 ```
 
-## Validation
+## Windows Runner
 
-```bash
-python validate.py
-pytest -q tests
-```
-
-## Windows Batch Runner
-
-Use `run_all.bat` from the project root to run common workflows.
-
-Important: run the batch file itself, not just `all`.
+Use `run_all.bat` to run common workflows from project root.
 
 ```bat
 .\run_all.bat all
 ```
 
-Available modes:
+Modes:
 
 - `all`: validate + tests + start API + inference
 - `validate`: run `validate.py`
@@ -228,3 +192,46 @@ docker run --rm -p 7860:7860 openenv-code-review
 ```
 
 Container serves on port `7860` and is compatible with Hugging Face Docker Spaces.
+
+## Space Metadata (Important)
+
+This README uses static YAML frontmatter for Hugging Face Spaces.
+Use concrete values only. Do not use template placeholders like `{{title}}` or conditional blocks.
+
+Current Space config:
+
+```yaml
+title: OpenEnv Code Review
+emoji: "\U0001F9EA"
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+```
+
+If you switch to Gradio Space metadata:
+
+- `sdk: gradio`
+- `app_file: app.py`
+- optional `python_version: "3.10"` (or your target runtime)
+
+## Project Structure
+
+```text
+OpenEnv/
+  env/
+  tasks/
+    graders/
+  data/
+  api/
+  index.html
+  style.css
+  script.js
+  run_all.bat
+  inference.py
+  openenv.yaml
+  Dockerfile
+  requirements.txt
+  README.md
+```
