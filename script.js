@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = "http://localhost:7860";
+const LOCAL_API_BASE_URL = "http://localhost:7860";
 
 const elements = {
   apiBaseUrl: document.getElementById("apiBaseUrl"),
@@ -83,7 +83,17 @@ const PRESET_BUILDERS = {
 
 function getApiBaseUrl() {
   const raw = elements.apiBaseUrl.value.trim();
-  return (raw || DEFAULT_API_BASE_URL).replace(/\/$/, "");
+  return (raw || getRuntimeDefaultApiBaseUrl()).replace(/\/$/, "");
+}
+
+function getRuntimeDefaultApiBaseUrl() {
+  if (window.location.protocol === "http:" || window.location.protocol === "https:") {
+    // On deployed hosts (including HF Spaces), API and UI are same-origin.
+    return window.location.origin;
+  }
+
+  // Local file preview mode still needs an explicit API endpoint.
+  return LOCAL_API_BASE_URL;
 }
 
 function persistApiBaseUrl() {
@@ -285,6 +295,19 @@ async function checkBackendConnection() {
   }
 }
 
+async function recoverFromUnreachableBackend() {
+  const runtimeDefault = getRuntimeDefaultApiBaseUrl();
+  const currentBaseUrl = getApiBaseUrl();
+
+  if (!runtimeDefault || runtimeDefault === currentBaseUrl) {
+    return false;
+  }
+
+  elements.apiBaseUrl.value = runtimeDefault;
+  persistApiBaseUrl();
+  return checkBackendConnection();
+}
+
 async function resetEnvironment() {
   const taskId = elements.taskId.value.trim() || "easy";
 
@@ -367,7 +390,7 @@ function setDefaultActionTemplate() {
 
 function initialize() {
   const savedApiBaseUrl = localStorage.getItem("openenv.apiBaseUrl");
-  elements.apiBaseUrl.value = savedApiBaseUrl || DEFAULT_API_BASE_URL;
+  elements.apiBaseUrl.value = (savedApiBaseUrl || getRuntimeDefaultApiBaseUrl()).replace(/\/$/, "");
 
   setDefaultActionTemplate();
   renderJson({});
@@ -389,7 +412,15 @@ function initialize() {
   elements.clearLogsBtn.addEventListener("click", clearLogs);
   elements.copyCurlBtn.addEventListener("click", copyCurlCommand);
 
-  checkBackendConnection().then((isConnected) => {
+  checkBackendConnection().then(async (isConnected) => {
+    if (!isConnected) {
+      const recovered = await recoverFromUnreachableBackend();
+      if (recovered) {
+        fetchState();
+        return;
+      }
+    }
+
     if (isConnected) {
       fetchState();
     }
