@@ -1,6 +1,39 @@
+---
+title: OpenEnv Code Review
+emoji: 🧪
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # OpenEnv Code Review Environment
 
 Minimal, production-ready OpenEnv project for real-world code review workflows.
+
+## Hugging Face Space Metadata
+
+This repository uses static YAML frontmatter for Hugging Face Spaces at the top of this file.
+Use concrete values only. Do not use template placeholders like `{{title}}` or conditional blocks.
+
+Current Space config:
+
+```yaml
+title: OpenEnv Code Review
+emoji: "\U0001F9EA"
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+```
+
+If you switch to a Gradio Space, update the metadata to:
+
+- `sdk: gradio`
+- `app_file: app.py`
+- optional `python_version: "3.10"` (or your target runtime)
 
 ## Description
 

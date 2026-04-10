@@ -59,3 +59,16 @@ async def state_openenv():
 @app.get("/health")
 async def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/")
+async def root() -> Dict[str, Any]:
+    return {
+        "service": "OpenEnv Code Review API",
+        "status": "ok",
+        "docs": "/docs",
+        "health": "/health",
+        "state": "/state",
+        "reset": "/reset",
+        "step": "/step",
+    }
