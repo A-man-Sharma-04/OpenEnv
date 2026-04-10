@@ -4,6 +4,7 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
   PYTHONUNBUFFERED=1 \
+  PYTHONPATH=/app \
   PORT=7860
 
 # Copy requirements first for caching

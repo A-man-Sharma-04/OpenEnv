@@ -33,49 +33,51 @@ const appState = {
   }
 };
 
+const REQUIRED_STAGES = {
+  easy: ["identify_bug"],
+  medium: ["identify_style_issues", "propose_refactor"],
+  hard: ["triage_risks", "propose_fix_plan", "define_test_plan"]
+};
+
+const STAGE_PAYLOAD_TEMPLATES = {
+  identify_bug: "The loop header is missing a colon, which raises a syntax error before execution.",
+  identify_style_issues: "Style risks include line length and readability issues that reduce maintainability and clarity.",
+  propose_refactor: "Extract helper logic and improve formatting with no behavior change.",
+  triage_risks: "Primary risks are duplicate charges from retry races and missing idempotency safeguards.",
+  propose_fix_plan: "Add idempotency key checks with transactional updates, rollback handling, and bounded retries.",
+  define_test_plan: "Add unit, integration, regression, and monitoring checks to prevent duplicate charge regressions."
+};
+
+function getTaskStages(taskId) {
+  return REQUIRED_STAGES[taskId] || REQUIRED_STAGES.easy;
+}
+
+function createAction(taskId, stage, confidence = 0.75) {
+  return {
+    task_id: taskId,
+    action_type: stage,
+    payload: STAGE_PAYLOAD_TEMPLATES[stage] || "Provide a concise stage-aligned analysis.",
+    confidence
+  };
+}
+
 const PRESET_BUILDERS = {
   analysis(taskId) {
-    return {
-      task_id: taskId,
-      action_type: "analysis",
-      payload: "Describe your reasoning here",
-      confidence: 0.75
-    };
+    const [stage] = getTaskStages(taskId);
+    return createAction(taskId, stage, 0.75);
   },
   explore(taskId) {
-    return {
-      task_id: taskId,
-      action_type: "explore",
-      payload: {
-        strategy: "sample-diverse-paths",
-        budget: 3,
-        note: "Collect alternatives before committing."
-      },
-      confidence: 0.68
-    };
+    const stages = getTaskStages(taskId);
+    const stage = stages.length > 1 ? stages[1] : stages[0];
+    return createAction(taskId, stage, 0.68);
   },
   verify(taskId) {
-    return {
-      task_id: taskId,
-      action_type: "verify",
-      payload: {
-        checks: ["constraints", "format", "scoring"],
-        strict: true
-      },
-      confidence: 0.84
-    };
+    const stages = getTaskStages(taskId);
+    const stage = stages[stages.length - 1];
+    return createAction(taskId, stage, 0.84);
   },
   hard_mode() {
-    return {
-      task_id: "hard",
-      action_type: "policy",
-      payload: {
-        objective: "maximize_consistency",
-        fallback: "safe_rollback",
-        depth: 4
-      },
-      confidence: 0.72
-    };
+    return createAction("hard", "triage_risks", 0.72);
   }
 };
 

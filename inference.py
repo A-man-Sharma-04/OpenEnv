@@ -94,22 +94,6 @@ def _run_task(task_id: str) -> float:
 
 
 def main() -> None:
-    if not os.getenv("API_BASE_URL"):
-        print("[STEP]")
-        print("action: API_BASE_URL not set, using default")
-        print("reward: 0.000")
-        print("")
-    if not os.getenv("MODEL_NAME"):
-        print("[STEP]")
-        print("action: MODEL_NAME not set, using default")
-        print("reward: 0.000")
-        print("")
-    if not HF_TOKEN:
-        print("[STEP]")
-        print("action: HF_TOKEN not set, running deterministic local policy")
-        print("reward: 0.000")
-        print("")
-
     _ = MODEL_NAME
     _ = _build_client()
     for task_id in TASK_ORDER:

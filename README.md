@@ -141,7 +141,7 @@ Default API base URL in the UI is `http://localhost:7860` and can be changed fro
 ## Run API
 
 ```bash
-uvicorn app:app --host 127.0.0.1 --port 7860
+uvicorn api.app:app --host 127.0.0.1 --port 7860
 ```
 
 Open the API in your browser at `http://127.0.0.1:7860` (or `http://localhost:7860`).

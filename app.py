@@ -9,4 +9,4 @@ if __name__ == "__main__":
 
     host = os.getenv("HOST", "127.0.0.1")
     port = int(os.getenv("PORT", "7860"))
-    uvicorn.run("app:app", host=host, port=port)
+    uvicorn.run("api.app:app", host=host, port=port)
