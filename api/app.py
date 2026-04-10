@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 from threading import Lock
 from typing import Any, Dict
 
@@ -8,6 +9,11 @@ from fastapi import Body, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    # Keep top-level packages importable when launched from nested app dirs.
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from env.environment import CodeReviewEnv
 
@@ -18,7 +24,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 INDEX_FILE = PROJECT_ROOT / "index.html"
 SCRIPT_FILE = PROJECT_ROOT / "script.js"
 STYLE_FILE = PROJECT_ROOT / "style.css"
