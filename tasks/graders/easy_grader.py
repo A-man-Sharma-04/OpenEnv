@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Tuple
 
-from app.utils import normalized_tokens
+from env.utils import normalized_tokens
 
 
 def _keyword_recall(text: str, expected_keywords: list[str]) -> float:

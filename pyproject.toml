@@ -1,27 +1,24 @@
-[project]
-name = "openenv-project"
-version = "0.1.0"
-description = "OpenEnv real-world simulation environment"
-authors = [{ name = "OpenEnv Team" }]
-readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-  "fastapi>=0.100",
-  "uvicorn[standard]>=0.20",
-  "pydantic>=2.0",
-  "requests>=2.31",
-  "python-dotenv>=1.0",
-  "python-multipart>=0.0.5",
-  "aiofiles>=0.8",
-  "jinja2>=3.0",
-  "groq>=0.20.0",
-  "openai>=1.40.0"
-]
-
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "openenv-code-review"
+version = "0.1.0"
+description = "OpenEnv code review environment"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "pydantic>=2.6",
+  "openai>=1.40",
+  "pytest>=8.0",
+  "openenv",
+]
+
+[project.scripts]
+openenv-server = "server.app:main"
+
 [tool.setuptools]
 include-package-data = true
-packages = ["app"]

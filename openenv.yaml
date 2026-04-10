@@ -1,7 +1,7 @@
 name: openenv-code-review-workflows
 version: 2.0.0
 description: Production-style code review environment with deterministic staged workflows and per-step rewards.
-entrypoint: code_review_env.CodeReviewEnv
+entrypoint: env.environment.CodeReviewEnv
 reward_range: [0.0, 1.0]
 
 tasks:
@@ -22,7 +22,7 @@ tasks:
     dataset: data/hard_cases.json
 
 action_space:
-  model: app.models.Action
+  model: env.models.Action
   fields:
     task_id: [easy, medium, hard]
     action_type: string
@@ -30,7 +30,7 @@ action_space:
     confidence: float[0.0,1.0]
 
 observation_space:
-  model: app.models.Observation
+  model: env.models.Observation
   fields:
     task_id: string
     difficulty: string
@@ -45,13 +45,13 @@ observation_space:
 
 schemas:
   action:
-    type: app.models.Action
+    type: env.models.Action
     format: pydantic
   observation:
-    type: app.models.Observation
+    type: env.models.Observation
     format: pydantic
   reward:
-    type: app.models.Reward
+    type: env.models.Reward
     format: pydantic
 
 deployment:
@@ -59,5 +59,5 @@ deployment:
   api_entrypoint: api/app.py
 
 inference:
-  script: scripts/run_baseline.py
+  script: inference.py
 

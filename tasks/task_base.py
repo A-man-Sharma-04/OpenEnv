@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple
 
-from app.utils import load_json_dataset
+from env.utils import load_json_dataset
 
 
 GraderFn = Callable[[str, Dict[str, Any], str], Tuple[float, str]]

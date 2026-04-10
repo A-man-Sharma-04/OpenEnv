@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenEnv Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+  <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+
+  <main class="container">
+    <header class="app-header card">
+      <div>
+        <h1>OpenEnv Dashboard</h1>
+        <p class="subtitle">Minimal control panel for reset, step, and state inspection.</p>
+      </div>
+      <label class="api-config" for="apiBaseUrl">
+        <span>API Base URL</span>
+        <input id="apiBaseUrl" type="url" placeholder="http://localhost:7860" />
+      </label>
+    </header>
+
+    <section class="grid">
+      <article class="card panel">
+        <h2>Control Panel</h2>
+
+        <div class="row">
+          <label for="taskId">Task ID</label>
+          <input id="taskId" type="text" value="easy" placeholder="easy | medium | hard" />
+        </div>
+
+        <div class="actions-row">
+          <button id="resetBtn" class="btn btn-primary">Reset Environment</button>
+          <button id="stateBtn" class="btn btn-secondary">Refresh State</button>
+        </div>
+
+        <label for="actionInput">Action JSON</label>
+        <textarea id="actionInput" spellcheck="false"></textarea>
+
+        <button id="stepBtn" class="btn btn-primary">Send Action</button>
+
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+      </article>
+
+      <article class="card panel">
+        <h2>Output Panel</h2>
+
+        <div class="chips">
+          <div class="chip">
+            <span class="chip-label">Reward</span>
+            <strong id="rewardValue">-</strong>
+          </div>
+          <div class="chip">
+            <span class="chip-label">Done</span>
+            <strong id="doneValue">-</strong>
+          </div>
+        </div>
+
+        <h3>Current State</h3>
+        <pre id="stateOutput" class="json-view">{}</pre>
+      </article>
+
+      <article class="card panel logs-panel">
+        <div class="logs-head">
+          <h2>Logs Panel</h2>
+          <button id="clearLogsBtn" class="btn btn-ghost">Clear Logs</button>
+        </div>
+
+        <ul id="logsList" class="logs-list"></ul>
+      </article>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, Tuple
 
-from app.utils import normalized_tokens
+from env.utils import normalized_tokens
 
 
 def _match_ratio(payload: str, required_terms: list[str]) -> float:

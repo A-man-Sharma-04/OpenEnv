@@ -1,194 +1,194 @@
----
-title: OpenEnv Code Review Workflows
-emoji: "🤖"
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
-tags:
-- openenv
-- code-review
-pinned: false
----
+# OpenEnv Code Review Environment
 
-## OpenEnv Code Review Workflows
+Minimal, production-ready OpenEnv project for real-world code review workflows.
 
-Production-style OpenEnv environment for deterministic code-review workflows with staged actions, per-step rewards, and API-first execution.
+## Description
 
-## What This Project Provides
+This environment simulates production incident code review work in three deterministic stages:
 
-- 3 tasks: easy, medium, hard
-- Typed OpenEnv models: Observation, Action, Reward
-- Deterministic scoring in the range [0.0, 1.0]
-- Runtime API endpoints for OpenEnv checks:
-  - POST /reset
-  - POST /step
-  - GET /state
-- Root inference script at inference.py that reads HF_TOKEN and outputs task scores
+- easy: identify a syntax bug and provide a safe direct fix
+- medium: identify style and maintainability risks, then propose a non-breaking refactor
+- hard: triage production risks, define a fix plan, and define a test plan
 
-## Functional Coverage
+The environment exposes required OpenEnv methods:
 
-- Real-world domain: code review incident handling
-- Exactly 3 tasks: easy, medium, hard
-- Pydantic models: Observation, Action, Reward
-- OpenEnv methods: reset(), step(), state()
-- Deterministic graders with score range [0.0, 1.0]
-- Reward at every step with progress rewards and penalties
-- Inference script reads HF_TOKEN
+- `reset(task_id)`
+- `step(action)`
+- `state()`
 
 ## Project Structure
 
-- app/
-  - env.py
-  - models.py
-  - rewards.py
-  - utils.py
-  - config.py
-- tasks/
-  - task_base.py
-  - easy_task.py
-  - medium_task.py
-  - hard_task.py
-- graders/
-  - easy_grader.py
-  - medium_grader.py
-  - hard_grader.py
-- data/
-  - easy_cases.json
-  - medium_cases.json
-  - hard_cases.json
-- scripts/
-  - run_baseline.py
-  - evaluate.py
-  - test_env.py
-- api/
-  - app.py
-- openenv.yaml
-- Dockerfile
-- requirements.txt
-- app.py
-- inference.py
-- validate.py
+```text
+OpenEnv/
+	env/
+	tasks/
+		graders/
+	data/
+	api/
+	index.html
+	style.css
+	script.js
+	run_all.bat
+	inference.py
+	openenv.yaml
+	Dockerfile
+	requirements.txt
+	README.md
+```
 
-## Reward Design
+## Action Space
 
-Per-step reward is deterministic and uses:
+Pydantic model: `env.models.Action`
 
-- Base stage quality score
-- Progress bonus when a required stage is completed
-- Confidence alignment bonus
-- Invalid action penalty
-- Loop/no-progress penalty
-- Destructive behavior penalty
+- `task_id: str` (`easy|medium|hard`)
+- `action_type: str` (must match required stage)
+- `payload: str` (analysis/fix text)
+- `confidence: float` (`0.0..1.0`)
 
-Total reward is clamped to [0.0, 1.0].
+## Observation Space
 
-## Local Setup
+Pydantic model: `env.models.Observation`
+
+- `task_id`
+- `difficulty`
+- `objective`
+- `ticket`
+- `available_actions`
+- `required_stages`
+- `completed_stages`
+- `step_count`
+- `remaining_steps`
+- `history`
+
+## Reward Model
+
+Pydantic model: `env.models.Reward`
+
+Reward is deterministic, emitted on every step, and clamped to `0.0..1.0`.
+
+Includes:
+
+- intermediate progress rewards
+- penalties for loops and no-progress behavior
+- penalties for redundant/invalid actions
+- penalties for destructive behavior signals
+
+## Tasks
+
+Datasets and deterministic graders:
+
+- `data/easy_cases.json` + `tasks/graders/easy_grader.py`
+- `data/medium_cases.json` + `tasks/graders/medium_grader.py`
+- `data/hard_cases.json` + `tasks/graders/hard_grader.py`
+
+All graders return scores in `0.0..1.0`.
+
+## Setup
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Run API (Required OpenEnv Command)
+## Frontend Dashboard
+
+Minimal static frontend files:
+
+- `index.html`
+- `style.css`
+- `script.js`
+
+Open directly in a browser:
+
+```bash
+start index.html
+```
+
+Default API base URL in the UI is `http://localhost:7860` and can be changed from the dashboard.
+
+## Run API
 
 ```bash
 uvicorn app:app --host 0.0.0.0 --port 7860
 ```
 
-## API Contract
+Endpoints:
 
-### POST /reset
+- `POST /reset`
+- `POST /step`
+- `GET /state`
+- `GET /health`
 
-Resets the environment and returns the initial observation.
-
-Request body (optional):
-
-```json
-{
-  "task_id": "easy"
-}
-```
-
-### POST /step
-
-Applies one action and returns the transition payload:
-
-```json
-{
-  "observation": {"...": "..."},
-  "reward": {"score": 0.0, "feedback": "...", "components": {}},
-  "done": false,
-  "info": {}
-}
-```
-
-Request body supports either direct action payload or wrapped action:
-
-```json
-{
-  "action": {
-    "task_id": "easy",
-    "action_type": "identify_bug",
-    "payload": "The loop header is missing a colon.",
-    "confidence": 0.85
-  }
-}
-```
-
-### GET /state
-
-Returns the current internal environment state snapshot.
-
-## Endpoint Smoke Tests
+Example:
 
 ```bash
-curl -X POST "http://127.0.0.1:7860/reset" \
-  -H "Content-Type: application/json" \
-  -d '{"task_id":"easy"}'
-
-curl -X POST "http://127.0.0.1:7860/step" \
-  -H "Content-Type: application/json" \
-  -d '{"action":{"task_id":"easy","action_type":"identify_bug","payload":"The loop header is missing a colon, causing syntax failure before execution.","confidence":0.85}}'
-
-curl "http://127.0.0.1:7860/state"
+curl -X POST http://127.0.0.1:7860/reset -H "Content-Type: application/json" -d '{"task_id":"easy"}'
 ```
 
-## Validation and Tests
+## Inference Script
+
+Root inference entrypoint: `inference.py`
+
+Reads required environment variables:
+
+- `API_BASE_URL`
+- `MODEL_NAME`
+- `HF_TOKEN`
+
+Emits strict logs using only:
+
+- `[START]`
+- `task: <task_name>`
+- `[STEP]`
+- `action: <action>`
+- `reward: <reward>`
+- `[END]`
+- `score: <final_score>`
 
 ```bash
-python scripts/test_env.py
-python validate.py
-pytest -q
-```
-
-## Inference (Mandatory Root Script)
-
-Set environment variables:
-
-```bash
-set HF_TOKEN=your_api_key
 python inference.py
 ```
 
-Example output:
-
-```text
-[START]
-[STEP]
-easy: 0.945
-[STEP]
-medium: 0.137
-[STEP]
-hard: 0.109
-[END]
-{"scores":{"easy":0.945,"medium":0.137,"hard":0.109},"average":0.397}
-```
-
-## Docker
+## Validation
 
 ```bash
-docker build -t openenv-code-review-workflows .
-docker run --rm -p 7860:7860 openenv-code-review-workflows
+python validate.py
+pytest -q tests
 ```
 
-The service listens on port 7860 and exposes /health for liveness checks.
+## Windows Batch Runner
+
+Use `run_all.bat` from the project root to run common workflows.
+
+Important: run the batch file itself, not just `all`.
+
+```bat
+.\run_all.bat all
+```
+
+Available modes:
+
+- `all`: validate + tests + start API + inference
+- `validate`: run `validate.py`
+- `tests`: run `pytest -q tests`
+- `api`: start API server only
+- `inference`: run inference only
+- `help`: show usage
+
+Examples:
+
+```bat
+.\run_all.bat validate
+.\run_all.bat tests
+.\run_all.bat api
+.\run_all.bat inference
+.\run_all.bat help
+```
+
+## Docker / Hugging Face Spaces
+
+```bash
+docker build -t openenv-code-review .
+docker run --rm -p 7860:7860 openenv-code-review
+```
+
+Container serves on port `7860` and is compatible with Hugging Face Docker Spaces.

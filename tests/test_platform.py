@@ -1,4 +1,5 @@
-from code_review_env import Action, CodeReviewEnv
+from env.environment import CodeReviewEnv
+from env.models import Action
 
 
 def test_env_interface_contract():

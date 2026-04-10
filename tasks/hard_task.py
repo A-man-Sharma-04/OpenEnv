@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from graders.hard_grader import grade_hard_stage
+from tasks.graders.hard_grader import grade_hard_stage
 from tasks.task_base import TaskDefinition
 
 

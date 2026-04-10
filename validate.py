@@ -4,7 +4,8 @@
 import json
 from pathlib import Path
 
-from code_review_env import Action, CodeReviewEnv
+from env.environment import CodeReviewEnv
+from env.models import Action
 
 
 def validate_environment_interface() -> None:
