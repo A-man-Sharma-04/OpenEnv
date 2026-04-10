@@ -25,6 +25,21 @@ if not defined PYTHON_CMD (
 set "MODE=%~1"
 if "%MODE%"=="" set "MODE=all"
 
+if "%HOST%"=="" (
+  set "API_BIND_HOST=127.0.0.1"
+) else (
+  set "API_BIND_HOST=%HOST%"
+)
+if "%PORT%"=="" (
+  set "API_PORT=7860"
+) else (
+  set "API_PORT=%PORT%"
+)
+
+set "API_BROWSER_HOST=%API_BIND_HOST%"
+if /I "%API_BROWSER_HOST%"=="0.0.0.0" set "API_BROWSER_HOST=127.0.0.1"
+set "DEFAULT_API_BASE_URL=http://%API_BROWSER_HOST%:%API_PORT%"
+
 if /I "%MODE%"=="help" (
   set "USAGE_EXIT=0"
   goto :usage
@@ -72,7 +87,8 @@ if errorlevel 1 (
 exit /b 0
 
 :run_api
-start "OpenEnv API" cmd /k "%PYTHON_CMD% app.py"
+echo [INFO] API URL: %DEFAULT_API_BASE_URL%
+start "OpenEnv API" cmd /k "set HOST=%API_BIND_HOST%&& set PORT=%API_PORT%&& %PYTHON_CMD% app.py"
 if errorlevel 1 (
   echo [ERROR] Failed to start API server.
   exit /b 1
@@ -80,7 +96,7 @@ if errorlevel 1 (
 exit /b 0
 
 :run_inference
-if "%API_BASE_URL%"=="" set "API_BASE_URL=http://127.0.0.1:7860"
+if "%API_BASE_URL%"=="" set "API_BASE_URL=%DEFAULT_API_BASE_URL%"
 set "OPENENV_INFER_CMD=set API_BASE_URL=%API_BASE_URL%&& %PYTHON_CMD% inference.py"
 cmd /c "%OPENENV_INFER_CMD%"
 if errorlevel 1 (
@@ -99,4 +115,9 @@ echo   validate   Run validate.py only
 echo   tests      Run pytest only
 echo   api        Start API server only
 echo   inference  Run inference.py only
+echo.
+echo Environment overrides:
+echo   HOST       API bind host (default 127.0.0.1)
+echo   PORT       API port (default 7860)
+echo   API_BASE_URL  Inference target URL (default uses HOST/PORT)
 exit /b %USAGE_EXIT%

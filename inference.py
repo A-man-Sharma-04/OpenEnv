@@ -58,8 +58,10 @@ DETERMINISTIC_POLICY = {
 
 
 def _build_client() -> OpenAI:
-    # OpenAI client is always constructed for compliance; calls are optional and safely handled.
-    return OpenAI(api_key=HF_TOKEN or "", base_url=API_BASE_URL)
+    # Keep startup resilient in CI/local runs where no token is configured.
+    if not HF_TOKEN:
+        return OpenAI(api_key="dummy", base_url=API_BASE_URL)
+    return OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
 
 
 def _run_task(task_id: str) -> float:
@@ -92,6 +94,22 @@ def _run_task(task_id: str) -> float:
 
 
 def main() -> None:
+    if not os.getenv("API_BASE_URL"):
+        print("[STEP]")
+        print("action: API_BASE_URL not set, using default")
+        print("reward: 0.000")
+        print("")
+    if not os.getenv("MODEL_NAME"):
+        print("[STEP]")
+        print("action: MODEL_NAME not set, using default")
+        print("reward: 0.000")
+        print("")
+    if not HF_TOKEN:
+        print("[STEP]")
+        print("action: HF_TOKEN not set, running deterministic local policy")
+        print("reward: 0.000")
+        print("")
+
     _ = MODEL_NAME
     _ = _build_client()
     for task_id in TASK_ORDER:

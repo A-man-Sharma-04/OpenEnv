@@ -22,6 +22,6 @@ USER app
 # HF Spaces / 8GB RAM compat: expose API port
 EXPOSE 7860
 
-# Default runtime required by this evaluation profile
-CMD ["python", "inference.py"]
+# Serve API continuously so frontend and external clients can connect.
+CMD ["python", "-m", "uvicorn", "api.app:app", "--host", "0.0.0.0", "--port", "7860"]
 

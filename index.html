@@ -4,23 +4,62 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OpenEnv Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="bg-grid" aria-hidden="true"></div>
   <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
   <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
 
   <main class="container">
     <header class="app-header card">
-      <div>
-        <h1>OpenEnv Dashboard</h1>
-        <p class="subtitle">Minimal control panel for reset, step, and state inspection.</p>
+      <div class="title-wrap">
+        <p class="eyebrow">OPENENV CONTROL HUB</p>
+        <h1>Run, Inspect, and Tune Your Agent Loop</h1>
+        <p class="subtitle">Interactive workspace for reset, step execution, live state inspection, and debugging telemetry.</p>
       </div>
       <label class="api-config" for="apiBaseUrl">
         <span>API Base URL</span>
         <input id="apiBaseUrl" type="url" placeholder="http://localhost:7860" />
       </label>
     </header>
+
+    <section class="intro-grid">
+      <article class="card intro-panel">
+        <h2>Quick Start</h2>
+        <ol class="guide-list">
+          <li>Set your backend URL and wait for the health check.</li>
+          <li>Choose a task and reset the environment.</li>
+          <li>Pick or edit an action JSON payload.</li>
+          <li>Send step actions and inspect reward, done state, and logs.</li>
+        </ol>
+      </article>
+
+      <article class="card intro-panel">
+        <h2>Session Snapshot</h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Steps Sent</span>
+            <strong id="statSteps">0</strong>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Total Reward</span>
+            <strong id="statReward">0</strong>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Success Rate</span>
+            <strong id="statSuccess">0%</strong>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Last Step</span>
+            <strong id="statLastStep">-</strong>
+          </div>
+        </div>
+      </article>
+    </section>
 
     <section class="grid">
       <article class="card panel">
@@ -36,10 +75,26 @@
           <button id="stateBtn" class="btn btn-secondary">Refresh State</button>
         </div>
 
+        <div class="row">
+          <label for="presetSelect">Action Preset</label>
+          <div class="actions-row">
+            <select id="presetSelect">
+              <option value="analysis">Analysis Action</option>
+              <option value="explore">Exploration Action</option>
+              <option value="verify">Verification Action</option>
+              <option value="hard_mode">Hard Task Strategy</option>
+            </select>
+            <button id="applyPresetBtn" class="btn btn-secondary" type="button">Apply Preset</button>
+          </div>
+        </div>
+
         <label for="actionInput">Action JSON</label>
         <textarea id="actionInput" spellcheck="false"></textarea>
 
-        <button id="stepBtn" class="btn btn-primary">Send Action</button>
+        <div class="actions-row">
+          <button id="stepBtn" class="btn btn-primary">Send Action</button>
+          <button id="copyCurlBtn" class="btn btn-ghost" type="button">Copy cURL</button>
+        </div>
 
         <div id="status" class="status" role="status" aria-live="polite"></div>
       </article>
@@ -69,6 +124,30 @@
         </div>
 
         <ul id="logsList" class="logs-list"></ul>
+      </article>
+
+      <article class="card panel docs-panel">
+        <h2>API Quick Reference</h2>
+        <div class="docs-grid">
+          <div>
+            <h3>Core Endpoints</h3>
+            <ul class="doc-list">
+              <li><strong>GET /health</strong> check backend availability.</li>
+              <li><strong>POST /reset</strong> start a task episode with <code>{"task_id": "easy"}</code>.</li>
+              <li><strong>POST /step</strong> submit one action payload.</li>
+              <li><strong>GET /state</strong> fetch latest environment state.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Tips</h3>
+            <ul class="doc-list">
+              <li>Use <strong>easy</strong> to validate payload format quickly.</li>
+              <li>Shift to <strong>medium/hard</strong> after policy shape stabilizes.</li>
+              <li>Clear logs when switching strategy to keep traces readable.</li>
+              <li>Track reward trend with session stats before hard resets.</li>
+            </ul>
+          </div>
+        </div>
       </article>
     </section>
   </main>
