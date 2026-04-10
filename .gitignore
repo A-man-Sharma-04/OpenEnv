@@ -86,11 +86,14 @@ celerybeat.pid
 
 # virtualenv
 .venv
-env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Project source package named "env" must be committed.
+!env/
+!env/**
 
 # Spyder project settings
 .spyderproject
