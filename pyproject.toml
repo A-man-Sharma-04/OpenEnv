@@ -18,8 +18,14 @@ dependencies = [
 ]
 
 [project.scripts]
+openenv = "openenv_cli:main"
 server = "server.app:main"
 openenv-server = "server.app:main"
 
 [tool.setuptools]
 include-package-data = true
+py-modules = ["openenv_cli", "validate"]
+
+[tool.setuptools.packages.find]
+include = ["api*", "env*", "server*", "tasks*"]
+exclude = ["data*"]
